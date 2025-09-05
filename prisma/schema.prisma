@@ -18,7 +18,32 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  profilInovasi ProfilInovasi[]
+
   @@map("users")
+}
+
+// Profil Inovasi model
+model ProfilInovasi {
+  id               String       @id @default(uuid())
+  namaInovasi      String
+  inovator         String
+  jenisInovasi     JenisInovasi
+  bentukInovasi    String
+  tanggalUjiCoba   DateTime?
+  tanggalPenerapan DateTime?
+  rancangBangun    String       @db.Text
+  manfaatInovasi   String       @db.Text
+  hasilInovasi     String       @db.Text
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profil_inovasi")
 }
 
 // Role enum
@@ -31,4 +56,10 @@ enum Role {
 enum Status {
   AKTIF
   TIDAK_AKTIF
+}
+
+// Jenis Inovasi enum
+enum JenisInovasi {
+  DIGITAL
+  NON_DIGITAL
 }
