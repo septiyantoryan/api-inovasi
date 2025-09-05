@@ -9,7 +9,7 @@ datasource db {
 
 // User model for authentication
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
   username  String   @unique
   password  String
   nama      String

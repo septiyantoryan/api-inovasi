@@ -30,7 +30,7 @@ app.use(cors({
 }));
 
 // Logging
-app.use(morgan('combined'));
+app.use(morgan('tiny'));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

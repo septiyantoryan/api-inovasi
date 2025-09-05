@@ -3,8 +3,8 @@ import { Request, Response, NextFunction } from 'express';
 
 interface AuthRequest extends Request {
     user?: {
-        id: number;
-        email: string;
+        userId: string;
+        username: string;
         role: string;
     };
 }export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction): void => {

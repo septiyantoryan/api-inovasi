@@ -1,14 +1,21 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma';
-import { hashPassword, comparePassword } from '../utils/password';
-import { generateToken } from '../utils/jwt';
+
+interface AuthRequest extends Request {
+    body: {
+        username: string;
+        password: string;
+        nama?: string;
+        role?: 'ADMIN' | 'OPD';
+    };
+}
 
 // Register new user
-export const register = async (req: Request, res: Response): Promise<void> => {
+export const register = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { username, password, nama, role } = req.body;
+        const { username, password, nama, role = 'OPD' } = req.body;
 
         // Validate required fields
         if (!username || !password || !nama) {
@@ -19,7 +26,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        // Check if username already exists
+        // Check if user already exists
         const existingUser = await prisma.user.findUnique({
             where: { username }
         });
@@ -27,13 +34,14 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         if (existingUser) {
             res.status(400).json({
                 success: false,
-                message: 'Username sudah digunakan'
+                message: 'Username sudah terdaftar'
             });
             return;
         }
 
         // Hash password
-        const hashedPassword = await hashPassword(password);
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         // Create new user
         const newUser = await prisma.user.create({
@@ -41,7 +49,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
                 username,
                 password: hashedPassword,
                 nama,
-                role: role || 'OPD'
+                role
             },
             select: {
                 id: true,
@@ -69,7 +77,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Login user
-export const login = async (req: Request, res: Response): Promise<void> => {
+export const login = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { username, password } = req.body;
 
@@ -96,16 +104,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         }
 
         // Check if user is active
-        if (user.status !== 'AKTIF') {
-            res.status(401).json({
+        if (user.status === 'TIDAK_AKTIF') {
+            res.status(403).json({
                 success: false,
-                message: 'Akun tidak aktif'
+                message: 'Akun Anda tidak aktif'
             });
             return;
         }
 
         // Verify password
-        const isPasswordValid = await comparePassword(password, user.password);
+        const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
             res.status(401).json({
@@ -116,24 +124,30 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         }
 
         // Generate JWT token
-        const token = generateToken({
-            userId: user.id,
-            username: user.username,
-            role: user.role
-        });
+        const token = jwt.sign(
+            {
+                userId: user.id,
+                username: user.username,
+                role: user.role
+            },
+            process.env.JWT_SECRET || 'your-secret-key',
+            { expiresIn: '24h' }
+        );
 
-        // Return success response
-        res.status(200).json({
+        // Return user data without password
+        const userData = {
+            id: user.id,
+            username: user.username,
+            nama: user.nama,
+            role: user.role,
+            status: user.status
+        };
+
+        res.json({
             success: true,
             message: 'Login berhasil',
             data: {
-                user: {
-                    id: user.id,
-                    username: user.username,
-                    nama: user.nama,
-                    role: user.role,
-                    status: user.status
-                },
+                user: userData,
                 token
             }
         });
@@ -148,14 +162,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Get current user profile
-export const getProfile = async (req: Request, res: Response): Promise<void> => {
+export const getProfile = async (req: Request & { user?: any }, res: Response): Promise<void> => {
     try {
-        const userId = (req as any).user?.userId;
+        const userId = req.user?.userId;
 
         if (!userId) {
             res.status(401).json({
                 success: false,
-                message: 'Unauthorized'
+                message: 'Token tidak valid'
             });
             return;
         }
@@ -181,8 +195,9 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
             return;
         }
 
-        res.status(200).json({
+        res.json({
             success: true,
+            message: 'Data profile berhasil diambil',
             data: user
         });
 
@@ -196,32 +211,30 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
 };
 
 // Update user profile
-export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+export const updateProfile = async (req: Request & { user?: any }, res: Response): Promise<void> => {
     try {
-        const userId = (req as any).user?.userId;
-        const { nama, password } = req.body;
+        const userId = req.user?.userId;
+        const { nama } = req.body;
 
         if (!userId) {
             res.status(401).json({
                 success: false,
-                message: 'Unauthorized'
+                message: 'Token tidak valid'
             });
             return;
         }
 
-        const updateData: any = {};
-
-        if (nama) {
-            updateData.nama = nama;
-        }
-
-        if (password) {
-            updateData.password = await hashPassword(password);
+        if (!nama) {
+            res.status(400).json({
+                success: false,
+                message: 'Nama harus diisi'
+            });
+            return;
         }
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },
-            data: updateData,
+            data: { nama },
             select: {
                 id: true,
                 username: true,
@@ -232,7 +245,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
             }
         });
 
-        res.status(200).json({
+        res.json({
             success: true,
             message: 'Profile berhasil diupdate',
             data: updatedUser
@@ -240,23 +253,6 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
 
     } catch (error) {
         console.error('Update profile error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Terjadi kesalahan server'
-        });
-    }
-};
-
-// Logout (for token blacklisting if needed)
-export const logout = async (req: Request, res: Response): Promise<void> => {
-    try {
-        // In a real app, you might want to blacklist the token
-        res.status(200).json({
-            success: true,
-            message: 'Logout berhasil'
-        });
-    } catch (error) {
-        console.error('Logout error:', error);
         res.status(500).json({
             success: false,
             message: 'Terjadi kesalahan server'
