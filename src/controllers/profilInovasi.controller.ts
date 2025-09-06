@@ -1,5 +1,10 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
+import {
+    CreateProfilInovasiInput,
+    UpdateProfilInovasiInput,
+    ProfilInovasiParams
+} from '../validations/profilInovasi.validation';
 
 interface AuthenticatedRequest extends Request {
     user?: {
@@ -10,17 +15,8 @@ interface AuthenticatedRequest extends Request {
 }
 
 interface ProfilInovasiRequest extends AuthenticatedRequest {
-    body: {
-        namaInovasi: string;
-        inovator: string;
-        jenisInovasi: 'DIGITAL' | 'NON_DIGITAL';
-        bentukInovasi: string;
-        tanggalUjiCoba?: string;
-        tanggalPenerapan?: string;
-        rancangBangun: string;
-        manfaatInovasi: string;
-        hasilInovasi: string;
-    };
+    body: CreateProfilInovasiInput | UpdateProfilInovasiInput;
+    params: ProfilInovasiParams;
 }
 
 // Create new profil inovasi
@@ -46,38 +42,11 @@ export const createProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
             rancangBangun,
             manfaatInovasi,
             hasilInovasi
-        } = req.body;
-
-        // Validate required fields
-        if (!namaInovasi || !inovator || !jenisInovasi || !bentukInovasi || !tanggalUjiCoba || !tanggalPenerapan || !rancangBangun || !manfaatInovasi || !hasilInovasi) {
-            res.status(400).json({
-                success: false,
-                message: 'Semua field wajib harus diisi'
-            });
-            return;
-        }
-
-        // Validate rancangBangun minimum 300 characters
-        if (rancangBangun.length < 300) {
-            res.status(400).json({
-                success: false,
-                message: 'Rancang bangun minimal 300 karakter'
-            });
-            return;
-        }
+        } = req.body as CreateProfilInovasiInput;
 
         // Parse dates
         const parsedTanggalUjiCoba = new Date(tanggalUjiCoba);
         const parsedTanggalPenerapan = new Date(tanggalPenerapan);
-
-        // Validate dates are valid
-        if (isNaN(parsedTanggalUjiCoba.getTime()) || isNaN(parsedTanggalPenerapan.getTime())) {
-            res.status(400).json({
-                success: false,
-                message: 'Format tanggal tidak valid'
-            });
-            return;
-        }
 
         const newProfilInovasi = await prisma.profilInovasi.create({
             data: {
@@ -307,41 +276,18 @@ export const updateProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
             rancangBangun,
             manfaatInovasi,
             hasilInovasi
-        } = req.body;
+        } = req.body as UpdateProfilInovasiInput;
 
-        // Validate rancangBangun minimum 300 characters if provided
-        if (rancangBangun && rancangBangun.length < 300) {
-            res.status(400).json({
-                success: false,
-                message: 'Rancang bangun minimal 300 karakter'
-            });
-            return;
-        }
-
-        // Parse and validate dates if provided
+        // Parse dates if provided
         let parsedTanggalUjiCoba;
         let parsedTanggalPenerapan;
 
-        if (tanggalUjiCoba !== undefined) {
+        if (tanggalUjiCoba) {
             parsedTanggalUjiCoba = new Date(tanggalUjiCoba);
-            if (isNaN(parsedTanggalUjiCoba.getTime())) {
-                res.status(400).json({
-                    success: false,
-                    message: 'Format tanggal uji coba tidak valid'
-                });
-                return;
-            }
         }
 
-        if (tanggalPenerapan !== undefined) {
+        if (tanggalPenerapan) {
             parsedTanggalPenerapan = new Date(tanggalPenerapan);
-            if (isNaN(parsedTanggalPenerapan.getTime())) {
-                res.status(400).json({
-                    success: false,
-                    message: 'Format tanggal penerapan tidak valid'
-                });
-                return;
-            }
         }
 
         const updatedProfilInovasi = await prisma.profilInovasi.update({

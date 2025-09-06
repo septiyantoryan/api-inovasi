@@ -2,29 +2,16 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../lib/prisma';
+import { RegisterInput, LoginInput } from '../validations/auth.validation';
 
 interface AuthRequest extends Request {
-    body: {
-        username: string;
-        password: string;
-        nama?: string;
-        role?: 'ADMIN' | 'OPD';
-    };
+    body: RegisterInput | LoginInput;
 }
 
 // Register new user
 export const register = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { username, password, nama, role = 'OPD' } = req.body;
-
-        // Validate required fields
-        if (!username || !password || !nama) {
-            res.status(400).json({
-                success: false,
-                message: 'Username, password, dan nama harus diisi'
-            });
-            return;
-        }
+        const { username, password, nama, role = 'OPD' } = req.body as RegisterInput;
 
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({
@@ -79,16 +66,7 @@ export const register = async (req: AuthRequest, res: Response): Promise<void> =
 // Login user
 export const login = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { username, password } = req.body;
-
-        // Validate required fields
-        if (!username || !password) {
-            res.status(400).json({
-                success: false,
-                message: 'Username dan password harus diisi'
-            });
-            return;
-        }
+        const { username, password } = req.body as LoginInput;
 
         // Find user by username
         const user = await prisma.user.findUnique({

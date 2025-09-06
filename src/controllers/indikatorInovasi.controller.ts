@@ -1,5 +1,12 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
+import {
+    CreateIndikatorInovasiInput,
+    UpdateIndikatorInovasiInput,
+    IndikatorInovasiParams,
+    IndikatorInovasiProfilParams,
+    IndikatorInovasiQuery
+} from '../validations/indikatorInovasi.validation';
 
 interface AuthRequest extends Request {
     user?: {
@@ -9,8 +16,25 @@ interface AuthRequest extends Request {
     };
 }
 
+interface CreateIndikatorRequest extends AuthRequest {
+    body: CreateIndikatorInovasiInput;
+}
+
+interface UpdateIndikatorRequest extends AuthRequest {
+    body: UpdateIndikatorInovasiInput;
+    params: IndikatorInovasiParams;
+}
+
+interface GetIndikatorRequest extends AuthRequest {
+    params: IndikatorInovasiParams;
+}
+
+interface GetIndikatorByProfilRequest extends AuthRequest {
+    params: IndikatorInovasiProfilParams;
+}
+
 // Create new Indikator Inovasi
-export const createIndikatorInovasi = async (req: AuthRequest, res: Response): Promise<void> => {
+export const createIndikatorInovasi = async (req: CreateIndikatorRequest, res: Response): Promise<void> => {
     try {
         const {
             profilInovasiId,
@@ -35,25 +59,6 @@ export const createIndikatorInovasi = async (req: AuthRequest, res: Response): P
             monitoringEvaluasiInovasiDaerah,
             kualitasInovasiDaerah
         } = req.body;
-
-        // Validate that all required fields are provided
-        const requiredFields = [
-            'profilInovasiId', 'regulasiInovasiDaerah', 'ketersediaanSDM', 'dukunganAnggaran',
-            'alatKerja', 'bimtekInovasi', 'integrasiProgramRKPD', 'keterlibatanAktorInovasi',
-            'pelaksanaInovasiDaerah', 'jejaringInovasi', 'sosialisasiInovasiDaerah', 'pedomanTeknis',
-            'kemudahanInformasiLayanan', 'kemudahanProsesInovasi', 'penyelesaianLayananPengaduan',
-            'layananTerintegrasi', 'replikasi', 'kecepatanPenciptaanInovasi', 'kemanfaatanInovasi',
-            'monitoringEvaluasiInovasiDaerah', 'kualitasInovasiDaerah'
-        ];
-
-        const missingFields = requiredFields.filter(field => !req.body[field]);
-        if (missingFields.length > 0) {
-            res.status(400).json({
-                error: 'Bad Request',
-                message: `Missing required fields: ${missingFields.join(', ')}`
-            });
-            return;
-        }
 
         // Check if ProfilInovasi exists
         const profilInovasi = await prisma.profilInovasi.findUnique({
@@ -161,7 +166,7 @@ export const getAllIndikatorInovasi = async (req: AuthRequest, res: Response): P
 };
 
 // Get Indikator Inovasi by ID
-export const getIndikatorInovasiById = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getIndikatorInovasiById = async (req: GetIndikatorRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
 
@@ -205,7 +210,7 @@ export const getIndikatorInovasiById = async (req: AuthRequest, res: Response): 
 };
 
 // Get Indikator Inovasi by Profil Inovasi ID
-export const getIndikatorInovasiByProfilId = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getIndikatorInovasiByProfilId = async (req: GetIndikatorByProfilRequest, res: Response): Promise<void> => {
     try {
         const { profilInovasiId } = req.params;
 
@@ -249,13 +254,10 @@ export const getIndikatorInovasiByProfilId = async (req: AuthRequest, res: Respo
 };
 
 // Update Indikator Inovasi
-export const updateIndikatorInovasi = async (req: AuthRequest, res: Response): Promise<void> => {
+export const updateIndikatorInovasi = async (req: UpdateIndikatorRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
         const updateData = req.body;
-
-        // Remove profilInovasiId from update data if present (shouldn't be updated)
-        delete updateData.profilInovasiId;
 
         const indikatorInovasi = await prisma.indikatorInovasi.findUnique({
             where: { id }
@@ -291,7 +293,7 @@ export const updateIndikatorInovasi = async (req: AuthRequest, res: Response): P
 };
 
 // Delete Indikator Inovasi
-export const deleteIndikatorInovasi = async (req: AuthRequest, res: Response): Promise<void> => {
+export const deleteIndikatorInovasi = async (req: GetIndikatorRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
 
