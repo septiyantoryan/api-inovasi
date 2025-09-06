@@ -49,7 +49,7 @@ export const createProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
         } = req.body;
 
         // Validate required fields
-        if (!namaInovasi || !inovator || !jenisInovasi || !bentukInovasi || !rancangBangun || !manfaatInovasi || !hasilInovasi) {
+        if (!namaInovasi || !inovator || !jenisInovasi || !bentukInovasi || !tanggalUjiCoba || !tanggalPenerapan || !rancangBangun || !manfaatInovasi || !hasilInovasi) {
             res.status(400).json({
                 success: false,
                 message: 'Semua field wajib harus diisi'
@@ -66,9 +66,18 @@ export const createProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
             return;
         }
 
-        // Parse dates if provided
-        const parsedTanggalUjiCoba = tanggalUjiCoba ? new Date(tanggalUjiCoba) : undefined;
-        const parsedTanggalPenerapan = tanggalPenerapan ? new Date(tanggalPenerapan) : undefined;
+        // Parse dates
+        const parsedTanggalUjiCoba = new Date(tanggalUjiCoba);
+        const parsedTanggalPenerapan = new Date(tanggalPenerapan);
+
+        // Validate dates are valid
+        if (isNaN(parsedTanggalUjiCoba.getTime()) || isNaN(parsedTanggalPenerapan.getTime())) {
+            res.status(400).json({
+                success: false,
+                message: 'Format tanggal tidak valid'
+            });
+            return;
+        }
 
         const newProfilInovasi = await prisma.profilInovasi.create({
             data: {
@@ -309,9 +318,31 @@ export const updateProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
             return;
         }
 
-        // Parse dates if provided
-        const parsedTanggalUjiCoba = tanggalUjiCoba ? new Date(tanggalUjiCoba) : undefined;
-        const parsedTanggalPenerapan = tanggalPenerapan ? new Date(tanggalPenerapan) : undefined;
+        // Parse and validate dates if provided
+        let parsedTanggalUjiCoba;
+        let parsedTanggalPenerapan;
+
+        if (tanggalUjiCoba !== undefined) {
+            parsedTanggalUjiCoba = new Date(tanggalUjiCoba);
+            if (isNaN(parsedTanggalUjiCoba.getTime())) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Format tanggal uji coba tidak valid'
+                });
+                return;
+            }
+        }
+
+        if (tanggalPenerapan !== undefined) {
+            parsedTanggalPenerapan = new Date(tanggalPenerapan);
+            if (isNaN(parsedTanggalPenerapan.getTime())) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Format tanggal penerapan tidak valid'
+                });
+                return;
+            }
+        }
 
         const updatedProfilInovasi = await prisma.profilInovasi.update({
             where: { id },

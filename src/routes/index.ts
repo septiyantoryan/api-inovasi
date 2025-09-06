@@ -2,6 +2,7 @@ import { Router, IRouter } from 'express';
 import { testCheck, welcome } from '../controllers/test.controller';
 import authRoutes from './auth.routes';
 import profilInovasiRoutes from './profilInovasi.routes';
+import indikatorInovasiRoutes from './indikatorInovasi.routes';
 
 const router: IRouter = Router();
 
@@ -10,6 +11,9 @@ router.use('/auth', authRoutes);
 
 // Profil Inovasi routes
 router.use('/profil-inovasi', profilInovasiRoutes);
+
+// Indikator Inovasi routes
+router.use('/indikator-inovasi', indikatorInovasiRoutes);
 
 // Test endpoint
 router.get('/test', testCheck);
