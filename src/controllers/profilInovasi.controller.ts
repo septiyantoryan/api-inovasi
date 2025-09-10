@@ -32,6 +32,19 @@ export const createProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
             return;
         }
 
+        // Verify that the user exists in the database
+        const userExists = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!userExists) {
+            res.status(401).json({
+                success: false,
+                message: 'User tidak ditemukan'
+            });
+            return;
+        }
+
         const {
             namaInovasi,
             inovator,
@@ -40,6 +53,7 @@ export const createProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
             tanggalUjiCoba,
             tanggalPenerapan,
             rancangBangun,
+            tujuanInovasi,
             manfaatInovasi,
             hasilInovasi
         } = req.body as CreateProfilInovasiInput;
@@ -57,6 +71,7 @@ export const createProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
                 tanggalUjiCoba: parsedTanggalUjiCoba,
                 tanggalPenerapan: parsedTanggalPenerapan,
                 rancangBangun,
+                tujuanInovasi,
                 manfaatInovasi,
                 hasilInovasi,
                 userId
@@ -81,6 +96,26 @@ export const createProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
 
     } catch (error) {
         console.error('Create profil inovasi error:', error);
+
+        // Handle specific Prisma errors
+        if (error instanceof Error) {
+            if (error.message.includes('P2003')) {
+                res.status(400).json({
+                    success: false,
+                    message: 'User tidak valid atau tidak ditemukan'
+                });
+                return;
+            }
+
+            if (error.message.includes('P2002')) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Data duplikat ditemukan'
+                });
+                return;
+            }
+        }
+
         res.status(500).json({
             success: false,
             message: 'Terjadi kesalahan server'
@@ -274,6 +309,7 @@ export const updateProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
             tanggalUjiCoba,
             tanggalPenerapan,
             rancangBangun,
+            tujuanInovasi,
             manfaatInovasi,
             hasilInovasi
         } = req.body as UpdateProfilInovasiInput;
@@ -300,6 +336,7 @@ export const updateProfilInovasi = async (req: ProfilInovasiRequest, res: Respon
                 ...(tanggalUjiCoba !== undefined && { tanggalUjiCoba: parsedTanggalUjiCoba }),
                 ...(tanggalPenerapan !== undefined && { tanggalPenerapan: parsedTanggalPenerapan }),
                 ...(rancangBangun && { rancangBangun }),
+                ...(tujuanInovasi && { tujuanInovasi }),
                 ...(manfaatInovasi && { manfaatInovasi }),
                 ...(hasilInovasi && { hasilInovasi })
             },

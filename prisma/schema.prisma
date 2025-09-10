@@ -34,6 +34,7 @@ model ProfilInovasi {
   tanggalUjiCoba   DateTime
   tanggalPenerapan DateTime
   rancangBangun    String       @db.Text
+  tujuanInovasi    String       @db.Text
   manfaatInovasi   String       @db.Text
   hasilInovasi     String       @db.Text
   createdAt        DateTime     @default(now())

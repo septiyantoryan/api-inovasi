@@ -44,6 +44,12 @@ export const createProfilInovasiSchema = z.object({
             .max(5000, 'Rancang bangun maksimal 5000 karakter')
             .trim(),
 
+        tujuanInovasi: z
+            .string({ message: 'Tujuan inovasi harus berupa string' })
+            .min(10, 'Tujuan inovasi minimal 10 karakter')
+            .max(2000, 'Tujuan inovasi maksimal 2000 karakter')
+            .trim(),
+
         manfaatInovasi: z
             .string({ message: 'Manfaat inovasi harus berupa string' })
             .min(10, 'Manfaat inovasi minimal 10 karakter')
@@ -114,6 +120,13 @@ export const updateProfilInovasiSchema = z.object({
             .string({ message: 'Rancang bangun harus berupa string' })
             .min(300, 'Rancang bangun minimal 300 karakter')
             .max(5000, 'Rancang bangun maksimal 5000 karakter')
+            .trim()
+            .optional(),
+
+        tujuanInovasi: z
+            .string({ message: 'Tujuan inovasi harus berupa string' })
+            .min(10, 'Tujuan inovasi minimal 10 karakter')
+            .max(2000, 'Tujuan inovasi maksimal 2000 karakter')
             .trim()
             .optional(),
 
