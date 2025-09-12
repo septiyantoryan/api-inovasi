@@ -5,6 +5,7 @@ import {
     UpdateProfilInovasiInput,
     ProfilInovasiParams
 } from '../validations/profilInovasi.validation';
+import { formatInovasiResponse } from '../utils/inovasi-status';
 
 interface AuthenticatedRequest extends Request {
     user?: {
@@ -169,6 +170,12 @@ export const getAllProfilInovasi = async (req: AuthenticatedRequest, res: Respon
                             nama: true,
                             role: true
                         }
+                    },
+                    indikatorInovasi: {
+                        select: {
+                            id: true,
+                            createdAt: true
+                        }
                     }
                 },
                 orderBy: {
@@ -180,11 +187,14 @@ export const getAllProfilInovasi = async (req: AuthenticatedRequest, res: Respon
             })
         ]);
 
+        // Format response with status information
+        const formattedProfilInovasi = formatInovasiResponse(profilInovasi);
+
         res.json({
             success: true,
             message: 'Data profil inovasi berhasil diambil',
             data: {
-                profilInovasi,
+                profilInovasi: formattedProfilInovasi,
                 pagination: {
                     total,
                     page: parseInt(page as string),
@@ -228,6 +238,12 @@ export const getProfilInovasiById = async (req: AuthenticatedRequest, res: Respo
                         nama: true,
                         role: true
                     }
+                },
+                indikatorInovasi: {
+                    select: {
+                        id: true,
+                        createdAt: true
+                    }
                 }
             }
         });
@@ -249,10 +265,13 @@ export const getProfilInovasiById = async (req: AuthenticatedRequest, res: Respo
             return;
         }
 
+        // Format response with status information
+        const formattedProfilInovasi = formatInovasiResponse(profilInovasi);
+
         res.json({
             success: true,
             message: 'Data profil inovasi berhasil diambil',
-            data: profilInovasi
+            data: formattedProfilInovasi
         });
 
     } catch (error) {

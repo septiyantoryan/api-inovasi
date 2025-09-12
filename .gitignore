@@ -84,3 +84,5 @@ jspm_packages/
 prisma/migrations/
 
 /src/generated/prisma
+
+src/uploads
