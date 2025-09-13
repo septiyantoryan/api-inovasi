@@ -14,7 +14,7 @@ export const registerSchema = z.object({
             .min(8, 'Password minimal 8 karakter')
             .max(100, 'Password maksimal 100 karakter')
             .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]+$/,
-                'Password harus mengandung minimal 1 huruf kecil, 1 huruf besar, 1 angka, dan 1 simbol (@$!%*?&_)'),
+                'Password harus mengandung minimal 1 huruf kecil, 1 huruf besar, 1 angka, dan 1 simbol'),
 
         nama: z
             .string({ message: 'Nama harus berupa string' })
@@ -52,13 +52,35 @@ export const updateProfileSchema = z.object({
             .trim()
             .optional(),
 
-        password: z
-            .string({ message: 'Password harus berupa string' })
-            .min(8, 'Password minimal 8 karakter')
-            .max(100, 'Password maksimal 100 karakter')
-            .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]+$/,
-                'Password harus mengandung minimal 1 huruf kecil, 1 huruf besar, 1 angka, dan 1 simbol (@$!%*?&_)')
+        username: z
+            .string({ message: 'Username harus berupa string' })
+            .min(4, 'Username minimal 4 karakter')
+            .max(20, 'Username maksimal 20 karakter')
+            .regex(/^[a-zA-Z0-9_]+$/, 'Username hanya boleh mengandung huruf, angka, dan underscore')
             .optional()
+    })
+});
+
+// Change password validation schema
+export const changePasswordSchema = z.object({
+    body: z.object({
+        currentPassword: z
+            .string({ message: 'Password lama harus berupa string' })
+            .min(1, 'Password lama tidak boleh kosong'),
+
+        newPassword: z
+            .string({ message: 'Password baru harus berupa string' })
+            .min(8, 'Password baru minimal 8 karakter')
+            .max(100, 'Password baru maksimal 100 karakter')
+            .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_])[A-Za-z\d@$!%*?&_]+$/,
+                'Password baru harus mengandung minimal 1 huruf kecil, 1 huruf besar, 1 angka, dan 1 simbol'),
+
+        confirmPassword: z
+            .string({ message: 'Konfirmasi password harus berupa string' })
+            .min(1, 'Konfirmasi password tidak boleh kosong')
+    }).refine((data) => data.newPassword === data.confirmPassword, {
+        message: 'Konfirmasi password tidak sesuai',
+        path: ['confirmPassword']
     })
 });
 
@@ -66,3 +88,4 @@ export const updateProfileSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>['body'];
 export type LoginInput = z.infer<typeof loginSchema>['body'];
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>['body'];
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>['body'];

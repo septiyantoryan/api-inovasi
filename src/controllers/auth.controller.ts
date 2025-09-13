@@ -192,7 +192,7 @@ export const getProfile = async (req: Request & { user?: any }, res: Response): 
 export const updateProfile = async (req: Request & { user?: any }, res: Response): Promise<void> => {
     try {
         const userId = req.user?.userId;
-        const { nama } = req.body;
+        const { nama, username } = req.body;
 
         if (!userId) {
             res.status(401).json({
@@ -202,17 +202,45 @@ export const updateProfile = async (req: Request & { user?: any }, res: Response
             return;
         }
 
-        if (!nama) {
+        // Build update data object
+        const updateData: any = {};
+
+        if (nama) {
+            updateData.nama = nama;
+        }
+
+        if (username) {
+            // Check if username already exists (exclude current user)
+            const existingUser = await prisma.user.findFirst({
+                where: {
+                    username,
+                    id: { not: userId }
+                }
+            });
+
+            if (existingUser) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Username sudah digunakan'
+                });
+                return;
+            }
+
+            updateData.username = username;
+        }
+
+        // Check if there's any data to update
+        if (Object.keys(updateData).length === 0) {
             res.status(400).json({
                 success: false,
-                message: 'Nama harus diisi'
+                message: 'Tidak ada data yang diupdate'
             });
             return;
         }
 
         const updatedUser = await prisma.user.update({
             where: { id: userId },
-            data: { nama },
+            data: updateData,
             select: {
                 id: true,
                 username: true,
@@ -231,6 +259,68 @@ export const updateProfile = async (req: Request & { user?: any }, res: Response
 
     } catch (error) {
         console.error('Update profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server'
+        });
+    }
+};
+
+// Change password
+export const changePassword = async (req: Request & { user?: any }, res: Response): Promise<void> => {
+    try {
+        const userId = req.user?.userId;
+        const { currentPassword, newPassword } = req.body;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Token tidak valid'
+            });
+            return;
+        }
+
+        // Get current user with password
+        const user = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            res.status(404).json({
+                success: false,
+                message: 'User tidak ditemukan'
+            });
+            return;
+        }
+
+        // Verify current password
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+        if (!isCurrentPasswordValid) {
+            res.status(400).json({
+                success: false,
+                message: 'Password lama tidak sesuai'
+            });
+            return;
+        }
+
+        // Hash new password
+        const saltRounds = 10;
+        const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        // Update password
+        await prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedNewPassword }
+        });
+
+        res.json({
+            success: true,
+            message: 'Password berhasil diubah'
+        });
+
+    } catch (error) {
+        console.error('Change password error:', error);
         res.status(500).json({
             success: false,
             message: 'Terjadi kesalahan server'
