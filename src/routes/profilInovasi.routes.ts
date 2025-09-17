@@ -2,6 +2,7 @@ import { Router, IRouter } from 'express';
 import {
     createProfilInovasi,
     getAllProfilInovasi,
+    getPublicProfilInovasi,
     getProfilInovasiById,
     updateProfilInovasi,
     deleteProfilInovasi
@@ -15,6 +16,9 @@ import {
 } from '../validations/profilInovasi.validation';
 
 const router: IRouter = Router();
+
+// Public route for viewing profil inovasi (no authentication required)
+router.get('/public', getPublicProfilInovasi);
 
 router.get('/', authenticateToken, authorizeRole(['ADMIN', 'OPD']), getAllProfilInovasi);
 router.get('/:id', authenticateToken, authorizeRole(['ADMIN', 'OPD']), validate(profilInovasiParamsSchema), getProfilInovasiById);

@@ -213,6 +213,79 @@ export const getAllProfilInovasi = async (req: AuthenticatedRequest, res: Respon
     }
 };
 
+// Get all profil inovasi for public view (no authentication required)
+export const getPublicProfilInovasi = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { page = '1', limit = '10', search = '' } = req.query;
+        const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
+
+        let whereClause: any = {};
+
+        // Add search functionality
+        if (search) {
+            whereClause.OR = [
+                { namaInovasi: { contains: search as string } },
+                { inovator: { contains: search as string } },
+                { bentukInovasi: { contains: search as string } }
+            ];
+        }
+
+        const [profilInovasi, total] = await Promise.all([
+            prisma.profilInovasi.findMany({
+                where: whereClause,
+                skip,
+                take: parseInt(limit as string),
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            username: true,
+                            nama: true,
+                            role: true
+                        }
+                    },
+                    indikatorInovasi: {
+                        select: {
+                            id: true,
+                            createdAt: true
+                        }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc'
+                }
+            }),
+            prisma.profilInovasi.count({
+                where: whereClause
+            })
+        ]);
+
+        // Format response with status information
+        const formattedProfilInovasi = formatInovasiResponse(profilInovasi);
+
+        res.json({
+            success: true,
+            message: 'Data profil inovasi berhasil diambil',
+            data: {
+                profilInovasi: formattedProfilInovasi,
+                pagination: {
+                    total,
+                    page: parseInt(page as string),
+                    limit: parseInt(limit as string),
+                    totalPages: Math.ceil(total / parseInt(limit as string))
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Get public profil inovasi error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server'
+        });
+    }
+};
+
 // Get profil inovasi by ID
 export const getProfilInovasiById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
