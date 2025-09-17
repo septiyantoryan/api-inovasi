@@ -98,3 +98,40 @@ enum JenisInovasi {
   DIGITAL
   NON_DIGITAL
 }
+
+model CarouselImage {
+  id        String   @id @default(cuid())
+  title     String?
+  path      String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("carousel_images")
+}
+
+model SystemTitle {
+  id        String   @id @default(cuid())
+  title     String   @db.Text
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_titles")
+}
+
+model Kontak {
+  id        String   @id @default(cuid())
+  namaDinas String
+  alamat    String
+  telepon   String
+  email     String
+  kodePos   String
+  latitude  String
+  longitude String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("kontak")
+}
